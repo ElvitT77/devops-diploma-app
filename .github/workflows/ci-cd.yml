@@ -50,6 +50,11 @@ jobs:
           echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
+      - name: Test VM connectivity
+        run: |
+          echo "Testing SSH port..."
+          nc -vz -w 10 "${{ secrets.VM_HOST }}" 22
+
       - name: Deploy application
         run: |
           ssh \
