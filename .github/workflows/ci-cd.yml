@@ -35,32 +35,26 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/devops-diploma:${{ github.sha }}
 
   deploy:
-
     needs: build-and-push
-
     if: github.ref == 'refs/heads/main'
 
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
-
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
-      - name: Test VM connectivity
-        run: |
-          echo "Testing SSH port..."
-          nc -vz -w 10 "${{ secrets.VM_HOST }}" 22
-
       - name: Deploy application
         run: |
-          ssh -vvv \
+          ssh \
             -i ~/.ssh/id_ed25519 \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
-            -o ConnectTimeout=30 \
             "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" \
-            "echo SSH_CONNECTION_OK"
+            "cd /opt/devops-app && \
+             docker compose pull && \
+             docker compose up -d && \
+             docker image prune -f"
