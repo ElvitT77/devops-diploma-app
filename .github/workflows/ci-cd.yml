@@ -47,6 +47,29 @@ jobs:
           echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
+      - name: Login to Docker Hub
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | \
+          docker login \
+            -u "${{ secrets.DOCKERHUB_USERNAME }}" \
+            --password-stdin
+
+      - name: Pull image on runner
+        run: |
+          docker pull \
+            "${{ secrets.DOCKERHUB_USERNAME }}/devops-diploma:latest"
+
+      - name: Transfer image to VM
+        run: |
+          docker save \
+            "${{ secrets.DOCKERHUB_USERNAME }}/devops-diploma:latest" | \
+          ssh \
+            -i ~/.ssh/id_ed25519 \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" \
+            "docker load"
+
       - name: Deploy application
         run: |
           ssh \
@@ -54,8 +77,6 @@ jobs:
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
             "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" \
-            "echo '${{ secrets.DOCKERHUB_TOKEN }}' | docker login -u '${{ secrets.DOCKERHUB_USERNAME }}' --password-stdin && \
-             cd /opt/devops-app && \
-             docker compose pull && \
-             docker compose up -d && \
+            "cd /opt/devops-app && \
+             docker compose up -d --pull never && \
              docker image prune -f"
