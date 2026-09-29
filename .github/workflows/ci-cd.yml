@@ -50,13 +50,15 @@ jobs:
           echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
-          ssh-keyscan -T 10 -p 22  -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
-
       - name: Deploy application
         run: |
           ssh \
-          "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" \
-          "cd /opt/devops-app && \
-           docker compose pull && \
-           docker compose up -d && \
-           docker image prune -f"
+            -i ~/.ssh/id_ed25519 \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -o ConnectTimeout=15 \
+            "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" \
+            "cd /opt/devops-app && \
+             docker compose pull && \
+             docker compose up -d && \
+             docker image prune -f"
