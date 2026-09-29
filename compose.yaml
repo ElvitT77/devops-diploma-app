@@ -1,0 +1,11 @@
+services:
+
+  web:
+    image: elvittg/devops-diploma:latest
+
+    container_name: devops-diploma
+
+    restart: unless-stopped
+
+    ports:
+      - "80:80"

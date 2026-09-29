@@ -1,0 +1,62 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+
+  build-and-push:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/devops-diploma:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/devops-diploma:${{ github.sha }}
+
+  deploy:
+
+    needs: build-and-push
+
+    if: github.ref == 'refs/heads/main'
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy application
+        run: |
+          ssh \
+          "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" \
+          "cd /opt/devops-app && \
+           docker compose pull && \
+           docker compose up -d && \
+           docker image prune -f"
