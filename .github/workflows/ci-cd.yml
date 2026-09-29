@@ -54,7 +54,8 @@ jobs:
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
             "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" \
-            "cd /opt/devops-app && \
+            "echo '${{ secrets.DOCKERHUB_TOKEN }}' | docker login -u '${{ secrets.DOCKERHUB_USERNAME }}' --password-stdin && \
+             cd /opt/devops-app && \
              docker compose pull && \
              docker compose up -d && \
              docker image prune -f"
